@@ -4,7 +4,7 @@ import Column from './components/Column';
 import Modal from './components/Modal';
 import { Auth } from './components/Auth';
 import { BoardData, Task, Priority, Column as ColumnType } from './types';
-import { Layout, Plus, Search, Kanban, X, Settings2, Check, LogOut, Loader2 } from 'lucide-react';
+import { Plus, Search, Kanban, X, Settings2, Check, LogOut, Loader2 } from 'lucide-react';
 import { supabase } from './services/supabase';
 import { Session } from '@supabase/supabase-js';
 import * as boardService from './services/boardService';
@@ -137,11 +137,23 @@ const App: React.FC = () => {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    const newData = { ...data };
+    // Correctly immutable delete
+    const newData = { 
+        ...data, 
+        tasks: { ...data.tasks },
+        columns: { ...data.columns }
+    };
+    
     delete newData.tasks[taskId];
     
     Object.keys(newData.columns).forEach(colId => {
-      newData.columns[colId].taskIds = newData.columns[colId].taskIds.filter(id => id !== taskId);
+      const col = newData.columns[colId];
+      if (col.taskIds.includes(taskId)) {
+          newData.columns[colId] = {
+              ...col,
+              taskIds: col.taskIds.filter(id => id !== taskId)
+          };
+      }
     });
 
     setData(newData);
@@ -152,8 +164,11 @@ const App: React.FC = () => {
   };
 
   const handleCreateTask = async (columnId: string) => {
-    // Use standard UUID-like ID for simplicity without uuid library, or rely on service
-    const newTaskId = crypto.randomUUID();
+    // Fallback for randomUUID in older browsers/http or if crypto is undefined
+    const newTaskId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID() 
+        : `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     const newTask: Task = {
       id: newTaskId,
       title: 'New Issue',
@@ -188,7 +203,10 @@ const App: React.FC = () => {
   const handleAddColumn = async () => {
     if (!newColumnTitle.trim()) return;
 
-    const newColumnId = crypto.randomUUID();
+    const newColumnId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID() 
+        : `col-${Date.now()}`;
+
     const newColumn: ColumnType = {
       id: newColumnId,
       title: newColumnTitle,
@@ -230,17 +248,18 @@ const App: React.FC = () => {
       const newOrder = prev.columnOrder.filter((id) => id !== columnId);
       const newColumns = { ...prev.columns };
       
-      // Cleanup tasks that were in this column from local state (optional but clean)
-      // const tasksToDelete = newColumns[columnId]?.taskIds || [];
-      // const newTasks = { ...prev.tasks };
-      // tasksToDelete.forEach(tid => delete newTasks[tid]);
+      // Cleanup tasks that were in this column from local state
+      const tasksToDelete = newColumns[columnId]?.taskIds || [];
+      const newTasks = { ...prev.tasks };
+      tasksToDelete.forEach(tid => delete newTasks[tid]);
 
       delete newColumns[columnId];
   
       return {
           ...prev,
           columnOrder: newOrder,
-          columns: newColumns
+          columns: newColumns,
+          tasks: newTasks
       };
     });
     

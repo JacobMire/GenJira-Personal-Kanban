@@ -1,7 +1,10 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
+import type { Schema } from "@google/genai";
 import { AIResponse } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Safe access to process.env
+const env = typeof process !== 'undefined' ? process.env : {};
+const apiKey = env.API_KEY || '';
 
 const enhanceTaskSchema: Schema = {
   type: Type.OBJECT,
@@ -28,6 +31,9 @@ const enhanceTaskSchema: Schema = {
 
 export const enhanceTaskWithAI = async (title: string, description: string): Promise<AIResponse> => {
   try {
+    // Initialize client here to avoid module-level crashes if API key is missing/invalid on load
+    const ai = new GoogleGenAI({ apiKey });
+
     const prompt = `
       You are an expert Agile Product Manager. Please analyze the following task draft and enhance it.
       
