@@ -191,19 +191,13 @@ export const Auth: React.FC = () => {
       {/* --- Mobile Layout (Flex Column) --- */}
       <div className="lg:hidden relative z-10 w-full h-screen flex flex-col p-4 sm:p-6 overflow-y-auto">
           {/* Mobile Header */}
-          <div className="flex items-center gap-2 mb-6 shrink-0">
+          <div className="flex items-center gap-2 mb-12 shrink-0">
             <div className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-500/20">
               <Kanban className="text-white h-4 w-4" />
             </div>
             <span className="font-bold text-lg tracking-tight">GenJira</span>
           </div>
 
-          {/* Mobile Hero (AI Card) */}
-          <div className="flex-1 flex items-center justify-center mb-6">
-               <div className="scale-90 sm:scale-100 animate-in zoom-in-95 duration-1000 fade-in">
-                    <AiCard />
-               </div>
-          </div>
 
           {/* Mobile Auth Card (Bottom Sheet Style) */}
           <div className="w-full bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-500">
@@ -266,6 +260,13 @@ export const Auth: React.FC = () => {
                   {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
                 </button>
              </div>
+          </div>
+
+                    {/* Mobile Hero (AI Card) */}
+          <div className="flex-1 flex items-center justify-center">
+               <div className="scale-100 animate-in zoom-in-95 duration-1000 fade-in">
+                    <AiCard />
+               </div>
           </div>
       </div>
 
