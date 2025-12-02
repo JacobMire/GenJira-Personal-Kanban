@@ -1,12 +1,15 @@
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Task, Priority } from '../types';
-import { Calendar, Tag, AlertCircle } from 'lucide-react';
+import { AlertCircle, Check } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
   index: number;
   onClick: (task: Task) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: (taskId: string) => void;
 }
 
 const PriorityColors = {
@@ -16,28 +19,53 @@ const PriorityColors = {
   [Priority.CRITICAL]: 'bg-red-500/20 text-red-300 border-red-500/30',
 };
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, index, onClick }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ 
+    task, 
+    index, 
+    onClick,
+    isSelectionMode = false,
+    isSelected = false,
+    onToggleSelection
+}) => {
   return (
-    <Draggable draggableId={task.id} index={index}>
+    <Draggable draggableId={task.id} index={index} isDragDisabled={isSelectionMode}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          onClick={() => onClick(task)}
+          onClick={() => {
+              if (isSelectionMode && onToggleSelection) {
+                  onToggleSelection(task.id);
+              } else {
+                  onClick(task);
+              }
+          }}
           className={`
             group relative p-4 mb-3 rounded-lg border 
             bg-surface transition-all duration-200
-            hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5
-            ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary rotate-2 z-50' : 'border-surfaceHighlight'}
+            ${isSelectionMode 
+                ? 'cursor-pointer hover:bg-slate-800' 
+                : 'hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5'
+            }
+            ${isSelected ? 'ring-2 ring-primary border-primary bg-primary/5' : 'border-surfaceHighlight'}
+            ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary rotate-2 z-50' : ''}
           `}
           style={provided.draggableProps.style}
         >
-          <div className="flex justify-between items-start mb-2">
+          {isSelectionMode && (
+              <div className="absolute top-4 right-4 z-10">
+                  <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-primary border-primary' : 'border-slate-500 bg-slate-900/50'}`}>
+                      {isSelected && <Check size={14} className="text-white" />}
+                  </div>
+              </div>
+          )}
+
+          <div className="flex justify-between items-start mb-2 pr-6">
             <span className={`text-xs font-medium px-2 py-0.5 rounded border ${PriorityColors[task.priority]}`}>
               {task.priority}
             </span>
-            {task.storyPoints && (
+            {!isSelectionMode && task.storyPoints && (
               <span className="text-xs font-mono bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded-full">
                 {task.storyPoints}
               </span>

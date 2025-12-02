@@ -20,6 +20,25 @@ const Modal: React.FC<ModalProps> = ({ task, isOpen, onClose, onSave, onDelete, 
     setEditedTask(task);
   }, [task]);
 
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (!isOpen) return;
+        
+        if (e.key === 'Escape') {
+            onClose();
+        }
+        
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            if (editedTask) onSave(editedTask);
+        }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, editedTask, onClose, onSave]);
+
   if (!isOpen || !editedTask) return null;
 
   const handleEnhance = async () => {
@@ -84,6 +103,7 @@ const Modal: React.FC<ModalProps> = ({ task, isOpen, onClose, onSave, onDelete, 
           {/* Title */}
           <input 
             type="text" 
+            autoFocus
             value={editedTask.title}
             onChange={(e) => handleChange('title', e.target.value)}
             className="w-full bg-transparent text-2xl font-bold text-slate-100 placeholder-slate-600 border-none focus:ring-0 p-0 mb-6"
@@ -197,12 +217,14 @@ const Modal: React.FC<ModalProps> = ({ task, isOpen, onClose, onSave, onDelete, 
              <button 
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                title="Esc"
              >
                  Cancel
              </button>
              <button 
                 onClick={() => onSave(editedTask)}
                 className="px-4 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-blue-500/20"
+                title="Ctrl+Enter"
              >
                  <Save size={16} />
                  Save Changes

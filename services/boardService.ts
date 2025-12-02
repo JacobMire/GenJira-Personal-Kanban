@@ -146,6 +146,11 @@ export const deleteTask = async (taskId: string) => {
     await supabase.from('tasks').delete().eq('id', taskId);
 };
 
+export const deleteTasks = async (taskIds: string[]) => {
+    if (taskIds.length === 0) return;
+    await supabase.from('tasks').delete().in('id', taskIds);
+};
+
 export const createColumn = async (boardId: string, column: Column, position: number) => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;

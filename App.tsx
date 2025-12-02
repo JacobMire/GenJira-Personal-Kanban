@@ -3,13 +3,14 @@ import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import Column from './components/Column';
 import Modal from './components/Modal';
 import BulkImportModal from './components/BulkImportModal';
+import ConfirmModal from './components/ConfirmModal';
 import { Auth } from './components/Auth';
 import { BoardData, Task, Priority, Column as ColumnType } from './types';
-import { Plus, Search, Kanban, X, Settings2, Check, LogOut, Loader2 } from 'lucide-react';
+import { Plus, Search, Kanban, X, Settings2, Check, LogOut, Loader2, Bell } from 'lucide-react';
 import { supabase } from './services/supabase';
 import { Session } from '@supabase/supabase-js';
 import * as boardService from './services/boardService';
-import { generateTasksFromText } from './services/geminiService';
+import { generateTasksFromText, BulkTaskResponse } from './services/geminiService';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -27,6 +28,27 @@ const App: React.FC = () => {
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [isLayoutMode, setIsLayoutMode] = useState(false);
+
+  // Confirm Modal State
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const requestConfirmation = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmConfig({ isOpen: true, title, message, onConfirm });
+  };
+
+  const closeConfirm = () => {
+    setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+  };
 
   // Auth Initialization
   useEffect(() => {
@@ -143,35 +165,71 @@ const App: React.FC = () => {
     await boardService.updateTask(updatedTask);
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    // Correctly immutable delete
-    const newData = { 
-        ...data, 
-        tasks: { ...data.tasks },
-        columns: { ...data.columns }
-    };
-    
-    delete newData.tasks[taskId];
-    
-    Object.keys(newData.columns).forEach(colId => {
-      const col = newData.columns[colId];
-      if (col.taskIds.includes(taskId)) {
-          newData.columns[colId] = {
-              ...col,
-              taskIds: col.taskIds.filter(id => id !== taskId)
-          };
+  const handleDeleteTask = (taskId: string) => {
+    requestConfirmation(
+      "Delete Task",
+      "Are you sure you want to delete this task? This action cannot be undone.",
+      async () => {
+        // Correctly immutable delete
+        const newData = { 
+            ...data, 
+            tasks: { ...data.tasks },
+            columns: { ...data.columns }
+        };
+        
+        delete newData.tasks[taskId];
+        
+        Object.keys(newData.columns).forEach(colId => {
+          const col = newData.columns[colId];
+          if (col.taskIds.includes(taskId)) {
+              newData.columns[colId] = {
+                  ...col,
+                  taskIds: col.taskIds.filter(id => id !== taskId)
+              };
+          }
+        });
+
+        setData(newData);
+        setIsModalOpen(false);
+        closeConfirm();
+
+        // DB
+        await boardService.deleteTask(taskId);
       }
-    });
+    );
+  };
+  
+  const handleDeleteMultipleTasks = (taskIds: string[]) => {
+    requestConfirmation(
+      "Delete Multiple Tasks",
+      `Are you sure you want to delete ${taskIds.length} tasks? This action cannot be undone.`,
+      async () => {
+          // Local state update
+          setData((prev) => {
+              const newTasks = { ...prev.tasks };
+              taskIds.forEach(id => delete newTasks[id]);
 
-    setData(newData);
-    setIsModalOpen(false);
+              const newColumns = { ...prev.columns };
+              Object.keys(newColumns).forEach(colId => {
+                  newColumns[colId] = {
+                      ...newColumns[colId],
+                      taskIds: newColumns[colId].taskIds.filter(tid => !taskIds.includes(tid))
+                  };
+              });
 
-    // DB
-    await boardService.deleteTask(taskId);
+              return { ...prev, tasks: newTasks, columns: newColumns };
+          });
+
+          closeConfirm();
+
+          // DB Sync
+          await boardService.deleteTasks(taskIds);
+      }
+    );
   };
 
   const handleCreateTask = async (columnId: string) => {
-    // Fallback for randomUUID in older browsers/http or if crypto is undefined
+    // Fallback for randomUUID check
     const newTaskId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
         ? crypto.randomUUID() 
         : `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -203,7 +261,7 @@ const App: React.FC = () => {
 
     // DB: Insert at position 0
     await boardService.createTask(columnId, newTask, 0);
-    // We should also push down other tasks in DB, but for now we rely on reorderTasksInColumn on next drag or reload
+    // We should also push down other tasks in DB
     await boardService.reorderTasksInColumn(columnId, newData.columns[columnId].taskIds);
   };
 
@@ -212,10 +270,26 @@ const App: React.FC = () => {
     setIsBulkModalOpen(true);
   };
 
-  const handleBulkImport = async (rawText: string) => {
+  const handleBulkImport = async (rawText: string, useAi: boolean) => {
     if (!activeColumnId) return;
 
-    const generatedTasks = await generateTasksFromText(rawText);
+    let generatedTasks: Partial<BulkTaskResponse>[] = [];
+
+    if (useAi) {
+        generatedTasks = await generateTasksFromText(rawText);
+    } else {
+        // Non-AI Logic: Split by newlines, strip bullets
+        generatedTasks = rawText.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map(line => ({
+                title: line.replace(/^[-*•\d\.]+\s+/, ''), // Remove bullets like "- ", "1. "
+                description: '',
+                priority: Priority.MEDIUM,
+                tags: [],
+                storyPoints: undefined
+            }));
+    }
     
     const newTasksMap: Record<string, Task> = {};
     const newTaskIds: string[] = [];
@@ -229,9 +303,9 @@ const App: React.FC = () => {
        
        const task: Task = {
          id: newTaskId,
-         title: t.title,
-         description: t.description,
-         priority: t.priority,
+         title: t.title || 'Untitled Task',
+         description: t.description || '',
+         priority: t.priority || Priority.MEDIUM,
          tags: t.tags || [],
          storyPoints: t.storyPoints,
          createdAt: timestamp + i
@@ -306,27 +380,34 @@ const App: React.FC = () => {
     await boardService.updateColumn(columnId, { title });
   };
 
-  const handleDeleteColumn = async (columnId: string) => {
-    setData((prev) => {
-      const newOrder = prev.columnOrder.filter((id) => id !== columnId);
-      const newColumns = { ...prev.columns };
-      
-      // Cleanup tasks that were in this column from local state
-      const tasksToDelete = newColumns[columnId]?.taskIds || [];
-      const newTasks = { ...prev.tasks };
-      tasksToDelete.forEach(tid => delete newTasks[tid]);
+  const handleDeleteColumn = (columnId: string) => {
+    requestConfirmation(
+      "Delete Column",
+      "Are you sure you want to delete this column? All tasks within it will be permanently removed.",
+      async () => {
+        setData((prev) => {
+          const newOrder = prev.columnOrder.filter((id) => id !== columnId);
+          const newColumns = { ...prev.columns };
+          
+          // Cleanup tasks that were in this column from local state
+          const tasksToDelete = newColumns[columnId]?.taskIds || [];
+          const newTasks = { ...prev.tasks };
+          tasksToDelete.forEach(tid => delete newTasks[tid]);
 
-      delete newColumns[columnId];
-  
-      return {
-          ...prev,
-          columnOrder: newOrder,
-          columns: newColumns,
-          tasks: newTasks
-      };
-    });
-    
-    await boardService.deleteColumn(columnId);
+          delete newColumns[columnId];
+      
+          return {
+              ...prev,
+              columnOrder: newOrder,
+              columns: newColumns,
+              tasks: newTasks
+          };
+        });
+        
+        closeConfirm();
+        await boardService.deleteColumn(columnId);
+      }
+    );
   };
 
   const handleResizeColumn = async (columnId: string, width: number) => {
@@ -347,6 +428,31 @@ const App: React.FC = () => {
     await supabase.auth.signOut();
     setSession(null);
   };
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if modals are open or typing in inputs
+      if (isModalOpen || isBulkModalOpen || confirmConfig.isOpen) return;
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
+
+      if (e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        const firstColId = data.columnOrder[0];
+        if (firstColId) handleCreateTask(firstColId);
+      }
+
+      if (e.key === '/') {
+        e.preventDefault();
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) searchInput.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen, isBulkModalOpen, confirmConfig.isOpen, data.columnOrder, handleCreateTask]);
 
   // Filter logic remains client side
   const filteredData = {
@@ -397,8 +503,9 @@ const App: React.FC = () => {
             <div className="relative group">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors" size={18}/>
                 <input 
+                    id="search-input"
                     type="text"
-                    placeholder="Search issues..."
+                    placeholder="Search issues... (/)"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-slate-900/50 border border-transparent focus:border-primary/50 rounded-lg py-2 pl-10 pr-4 text-sm text-slate-200 outline-none transition-all focus:bg-slate-900" 
@@ -460,6 +567,7 @@ const App: React.FC = () => {
                   onResize={handleResizeColumn}
                   onRename={handleRenameColumn}
                   onDelete={handleDeleteColumn}
+                  onDeleteMultiple={handleDeleteMultipleTasks}
                 />
               );
             })}
@@ -519,6 +627,14 @@ const App: React.FC = () => {
         onClose={() => setIsBulkModalOpen(false)}
         onImport={handleBulkImport}
         columnTitle={activeColumnId ? data.columns[activeColumnId]?.title : ''}
+      />
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={closeConfirm}
       />
     </div>
   );

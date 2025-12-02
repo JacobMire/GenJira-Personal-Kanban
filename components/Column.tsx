@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Droppable } from '@hello-pangea/dnd';
 import { Column as ColumnType, Task } from '../types';
 import TaskCard from './TaskCard';
-import { MoreHorizontal, Plus, Trash2, Pencil, Check, X, Sparkles } from 'lucide-react';
+import { MoreHorizontal, Plus, Trash2, Pencil, Check, X, Sparkles, CheckSquare } from 'lucide-react';
 
 interface ColumnProps {
   column: ColumnType;
@@ -14,6 +14,7 @@ interface ColumnProps {
   onResize: (columnId: string, width: number) => void;
   onRename: (columnId: string, title: string) => void;
   onDelete: (columnId: string) => void;
+  onDeleteMultiple: (taskIds: string[]) => void;
 }
 
 const Column: React.FC<ColumnProps> = ({ 
@@ -25,12 +26,17 @@ const Column: React.FC<ColumnProps> = ({
   isLayoutMode,
   onResize,
   onRename,
-  onDelete
+  onDelete,
+  onDeleteMultiple
 }) => {
   const [width, setWidth] = useState(column.width || 320);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [titleInput, setTitleInput] = useState(column.title);
+  
+  // Selection Mode State
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   
   const isResizingRef = useRef(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -62,6 +68,13 @@ const Column: React.FC<ColumnProps> = ({
           inputRef.current.focus();
       }
   }, [isRenaming]);
+
+  // Reset selection when closing mode
+  useEffect(() => {
+      if (!isSelectionMode) {
+          setSelectedTaskIds(new Set());
+      }
+  }, [isSelectionMode]);
 
   const handleRenameSubmit = () => {
       if (titleInput.trim()) {
@@ -96,6 +109,24 @@ const Column: React.FC<ColumnProps> = ({
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onMouseUp);
   };
+  
+  const handleToggleSelection = (taskId: string) => {
+      const newSelected = new Set(selectedTaskIds);
+      if (newSelected.has(taskId)) {
+          newSelected.delete(taskId);
+      } else {
+          newSelected.add(taskId);
+      }
+      setSelectedTaskIds(newSelected);
+  };
+  
+  const handleExecuteDeleteMultiple = () => {
+      if (selectedTaskIds.size > 0) {
+          // Pass directly to parent; App.tsx handles the modal logic now
+          onDeleteMultiple(Array.from(selectedTaskIds));
+      }
+      setIsSelectionMode(false);
+  };
 
   return (
     <div 
@@ -116,6 +147,26 @@ const Column: React.FC<ColumnProps> = ({
                     className="flex-1 bg-slate-800 text-sm font-bold text-white px-2 py-1 rounded border border-primary outline-none"
                 />
             </div>
+        ) : isSelectionMode ? (
+            <div className="flex items-center justify-between w-full bg-slate-800 rounded px-2 py-1">
+                <span className="text-xs text-slate-300 font-medium">{selectedTaskIds.size} Selected</span>
+                <div className="flex items-center gap-1">
+                     <button 
+                        onClick={handleExecuteDeleteMultiple}
+                        className="p-1 text-red-400 hover:text-white hover:bg-red-500 rounded transition-colors"
+                        title="Delete Selected"
+                     >
+                         <Trash2 size={14} />
+                     </button>
+                     <button 
+                        onClick={() => setIsSelectionMode(false)}
+                        className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                        title="Cancel"
+                     >
+                         <X size={14} />
+                     </button>
+                </div>
+            </div>
         ) : (
             <div className="flex items-center gap-2">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 truncate cursor-default" title={column.title}>
@@ -127,7 +178,7 @@ const Column: React.FC<ColumnProps> = ({
             </div>
         )}
 
-        {!isLayoutMode && !isRenaming && (
+        {!isLayoutMode && !isRenaming && !isSelectionMode && (
           <div className="flex gap-1 relative">
                <button 
                   onClick={() => onBulkImport(column.id)}
@@ -153,7 +204,7 @@ const Column: React.FC<ColumnProps> = ({
                 </button>
 
                 {isMenuOpen && (
-                    <div className="absolute right-0 top-8 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                    <div className="absolute right-0 top-8 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -167,14 +218,23 @@ const Column: React.FC<ColumnProps> = ({
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm('Are you sure you want to delete this column? All tasks inside will be deleted.')) {
-                                    onDelete(column.id);
-                                }
+                                setIsSelectionMode(true);
+                                setIsMenuOpen(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700 flex items-center gap-2"
+                        >
+                            <CheckSquare size={14} /> Delete Multiple
+                        </button>
+                        <div className="h-px bg-slate-700 my-1 mx-2"></div>
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(column.id); // Passed to parent, App handles confirmation modal
                                 setIsMenuOpen(false);
                             }}
                             className="w-full text-left px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-900/30 flex items-center gap-2"
                         >
-                            <Trash2 size={14} /> Delete
+                            <Trash2 size={14} /> Delete Column
                         </button>
                     </div>
                 )}
@@ -191,7 +251,7 @@ const Column: React.FC<ColumnProps> = ({
               ref={provided.innerRef}
               {...provided.droppableProps}
               className={`flex-1 overflow-y-auto custom-scrollbar transition-colors duration-200 px-1 py-1 ${
-                snapshot.isDraggingOver ? 'bg-slate-800/30' : ''
+                snapshot.isDraggingOver && !isSelectionMode ? 'bg-slate-800/30' : ''
               }`}
             >
               {tasks.map((task, index) => (
@@ -200,17 +260,22 @@ const Column: React.FC<ColumnProps> = ({
                     task={task} 
                     index={index} 
                     onClick={onTaskClick}
+                    isSelectionMode={isSelectionMode}
+                    isSelected={selectedTaskIds.has(task.id)}
+                    onToggleSelection={handleToggleSelection}
                 />
               ))}
               {provided.placeholder}
               
-              <button 
-                onClick={() => onAddTask(column.id)}
-                className="w-full py-2 mt-2 flex items-center justify-center gap-2 text-slate-500 hover:text-primary hover:bg-slate-800/50 rounded-lg border border-dashed border-slate-700 hover:border-primary/50 transition-all text-sm group"
-              >
-                <Plus size={14} className="group-hover:scale-110 transition-transform"/>
-                Create issue
-              </button>
+              {!isSelectionMode && (
+                  <button 
+                    onClick={() => onAddTask(column.id)}
+                    className="w-full py-2 mt-2 flex items-center justify-center gap-2 text-slate-500 hover:text-primary hover:bg-slate-800/50 rounded-lg border border-dashed border-slate-700 hover:border-primary/50 transition-all text-sm group"
+                  >
+                    <Plus size={14} className="group-hover:scale-110 transition-transform"/>
+                    Create issue
+                  </button>
+              )}
             </div>
           )}
         </Droppable>
