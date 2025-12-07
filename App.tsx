@@ -510,9 +510,24 @@ const App: React.FC = () => {
       {/* Top Navigation */}
       <nav className="h-16 border-b border-white/5 bg-surface/50 backdrop-blur-md flex items-center justify-between px-3 sm:px-6 shrink-0 z-10 gap-2">
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          <div className="bg-primary/20 p-2 rounded-lg">
+          {/* <div className="bg-primary/20 p-2 rounded-lg">
             <Kanban className="text-primary" size={24} />
-          </div>
+          </div> */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 32 32"
+            width={32}
+            height={32}
+            className="text-primary"
+          >
+            <rect width="32" height="32" rx="6" fill="#0f172a" />
+            <circle cx="10" cy="10" r="3" fill="#3b82f6" />
+            <circle cx="22" cy="10" r="3" fill="#8b5cf6" />
+            <circle cx="16" cy="22" r="3" fill="#64748b" />
+            <line x1="10" y1="10" x2="16" y2="22" stroke="#3b82f6" strokeWidth="2" />
+            <line x1="22" y1="10" x2="16" y2="22" stroke="#8b5cf6" strokeWidth="2" />
+          </svg>
+
           <div className="hidden xs:block">
             <h1 className="font-bold text-lg tracking-tight">GenJira</h1>
             <p className="text-xs text-slate-500 hidden sm:block">Cloud Workspace</p>
