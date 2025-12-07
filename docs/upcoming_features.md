@@ -1,0 +1,4 @@
+# Upcoming Features
+
+- data encryption
+- 

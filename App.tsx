@@ -528,7 +528,7 @@ const App: React.FC = () => {
             <line x1="22" y1="10" x2="16" y2="22" stroke="#8b5cf6" strokeWidth="2" />
           </svg>
 
-          <div className="hidden xs:block">
+          <div className="hidden sm:block">
             <h1 className="font-bold text-lg tracking-tight">GenJira</h1>
             <p className="text-xs text-slate-500 hidden sm:block">Cloud Workspace</p>
           </div>
