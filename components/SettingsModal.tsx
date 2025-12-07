@@ -6,6 +6,8 @@ interface SettingsModalProps {
     onClose: () => void;
     isCondensed: boolean;
     onToggleCondensed: (value: boolean) => void;
+    showCheckboxes: boolean;
+    onToggleCheckboxes: (value: boolean) => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -13,6 +15,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onClose,
     isCondensed,
     onToggleCondensed,
+    showCheckboxes,
+    onToggleCheckboxes,
 }) => {
     if (!isOpen) return null;
 
@@ -54,6 +58,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 className={`
                   inline-block h-4 w-4 transform rounded-full bg-white transition-transform
                   ${isCondensed ? 'translate-x-6' : 'translate-x-1'}
+                `}
+                            />
+                        </button>
+                    </div>
+
+                    {/* Show Checkboxes Toggle */}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-sm font-medium text-slate-200">Show Checkboxes</h3>
+                            <p className="text-xs text-slate-400 mt-1">
+                                Always show selection checkboxes on cards.
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => onToggleCheckboxes(!showCheckboxes)}
+                            className={`
+                relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-slate-900
+                ${showCheckboxes ? 'bg-primary' : 'bg-slate-700'}
+              `}
+                        >
+                            <span
+                                className={`
+                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  ${showCheckboxes ? 'translate-x-6' : 'translate-x-1'}
                 `}
                             />
                         </button>

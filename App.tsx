@@ -102,7 +102,25 @@ const App: React.FC = () => {
     }
   };
 
-  const onDragEnd = async (result: DropResult) => {
+  const handleToggleTaskCompletion = async (taskId: string, isCompleted: boolean) => {
+    const task = data.tasks[taskId];
+    if (!task) return;
+
+    const updatedTask = { ...task, isCompleted };
+
+    // Optimistic update
+    setData(prev => ({
+      ...prev,
+      tasks: {
+        ...prev.tasks,
+        [taskId]: updatedTask
+      }
+    }));
+
+    await boardService.updateTask(updatedTask);
+  };
+
+  const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
@@ -557,7 +575,7 @@ const App: React.FC = () => {
 
       {/* Main Board Area */}
       <main className="flex-1 overflow-x-auto overflow-y-hidden p-6 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800/20 via-background to-background">
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DragDropContext onDragEnd={handleDragEnd}>
           <div className="flex h-full items-start gap-2">
             {data.columnOrder.map((columnId) => {
               const column = filteredData.columns[columnId];
@@ -580,6 +598,8 @@ const App: React.FC = () => {
                   onDelete={handleDeleteColumn}
                   onDeleteMultiple={handleDeleteMultipleTasks}
                   isCondensed={settings.isCondensed}
+                  showCheckboxes={settings.showCheckboxes}
+                  onToggleTaskCompletion={handleToggleTaskCompletion}
                 />
               );
             })}
@@ -654,6 +674,8 @@ const App: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
         isCondensed={settings.isCondensed}
         onToggleCondensed={(val) => updateSetting('isCondensed', val)}
+        showCheckboxes={settings.showCheckboxes}
+        onToggleCheckboxes={(val) => updateSetting('showCheckboxes', val)}
       />
     </div>
   );

@@ -27,6 +27,7 @@ interface DBTask {
   story_points: number;
   acceptance_criteria: string[];
   position: number;
+  is_completed: boolean;
   created_at: string;
 }
 
@@ -101,6 +102,7 @@ export const fetchBoardData = async (userId: string): Promise<BoardData | null> 
       tags: t.tags || [],
       storyPoints: t.story_points,
       acceptanceCriteria: t.acceptance_criteria || [],
+      isCompleted: t.is_completed || false,
       createdAt: new Date(t.created_at).getTime()
     };
     tasks[task.id] = task;
@@ -129,6 +131,7 @@ export const createTask = async (columnId: string, task: Task, position: number)
     tags: task.tags,
     story_points: task.storyPoints,
     acceptance_criteria: task.acceptanceCriteria,
+    is_completed: task.isCompleted,
     position: position,
     created_at: new Date(task.createdAt).toISOString()
   });
@@ -143,6 +146,7 @@ export const updateTask = async (task: Task) => {
     tags: task.tags,
     story_points: task.storyPoints,
     acceptance_criteria: task.acceptanceCriteria,
+    is_completed: task.isCompleted,
   }).eq('id', task.id);
   
   if (error) console.error('Update Task Error:', error);

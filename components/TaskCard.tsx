@@ -11,6 +11,8 @@ interface TaskCardProps {
   isSelected?: boolean;
   onToggleSelection?: (taskId: string) => void;
   isCondensed?: boolean;
+  showCheckboxes?: boolean;
+  onToggleTaskCompletion?: (taskId: string, isCompleted: boolean) => void;
 }
 
 const PriorityBackgrounds = {
@@ -34,7 +36,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
   isSelectionMode = false,
   isSelected = false,
   onToggleSelection,
-  isCondensed = false
+  isCondensed = false,
+  showCheckboxes = false,
+  onToggleTaskCompletion
 }) => {
   return (
     <Draggable draggableId={task.id} index={index} isDragDisabled={isSelectionMode}>
@@ -43,39 +47,61 @@ const TaskCard: React.FC<TaskCardProps> = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          onClick={() => {
+          onClick={(e) => {
             if (isSelectionMode && onToggleSelection) {
               onToggleSelection(task.id);
-            } else {
+            } else if (!showCheckboxes) {
               onClick(task);
             }
           }}
           className={`
-            group relative p-4 mb-3 rounded-lg border 
+            group relative mb-3 rounded-lg border 
             transition-all duration-200
+            ${isCondensed ? 'flex items-center p-2' : 'p-4'}
             ${isSelectionMode
               ? 'bg-surface cursor-pointer hover:bg-slate-800'
               : isCondensed
                 ? (PriorityBackgrounds[task.priority] || 'bg-slate-800 border-slate-700')
-                : 'bg-surface hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5'
+                : 'bg-surface border-slate-700 hover:border-slate-600'
             }
             ${isSelected ? 'ring-2 ring-primary border-primary bg-primary/5' : isCondensed ? '' : 'border-surfaceHighlight'}
             ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary rotate-2 z-50' : ''}
           `}
           style={provided.draggableProps.style}
         >
-          {isSelectionMode && (
-            <div className="absolute top-4 right-4 z-10">
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-primary border-primary' : 'border-slate-500 bg-slate-900/50'}`}>
-                {isSelected && <Check size={14} className="text-white" />}
+          {(isSelectionMode || showCheckboxes) && (
+            <div
+              className={`
+                  z-10
+                  ${isCondensed
+                  ? 'mr-3 flex items-center'
+                  : 'absolute top-4 right-4'
+                }
+              `}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isSelectionMode && onToggleSelection) {
+                  onToggleSelection(task.id);
+                } else if (onToggleTaskCompletion) {
+                  onToggleTaskCompletion(task.id, !task.isCompleted);
+                }
+              }}
+            >
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors cursor-pointer
+                    ${isSelectionMode
+                  ? (isSelected ? 'bg-primary border-primary' : 'border-slate-500 bg-slate-900/50 hover:border-primary/50')
+                  : (task.isCompleted ? 'bg-emerald-500 border-emerald-500' : 'border-slate-500 bg-slate-900/50 hover:border-emerald-500/50')
+                }
+                `}>
+                {(isSelectionMode ? isSelected : task.isCompleted) && <Check size={14} className="text-white" />}
               </div>
             </div>
           )}
 
           {isCondensed ? (
             // Condensed View Content
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-slate-100 truncate pr-2">
+            <div className={`flex items-center justify-between flex-1 min-w-0 ${(task.isCompleted && showCheckboxes) ? 'opacity-50' : ''}`} onClick={() => onClick(task)}>
+              <h4 className={`text-sm font-medium text-slate-100 truncate pr-2 ${(task.isCompleted && showCheckboxes) ? 'line-through text-slate-400' : ''}`}>
                 {task.title}
               </h4>
               {task.storyPoints && (
@@ -86,7 +112,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           ) : (
             // Standard View Content
-            <>
+            <div className={`flex-1 ${(task.isCompleted && showCheckboxes) ? 'opacity-50' : ''}`} onClick={() => onClick(task)}>
               <div className="flex justify-between items-start mb-2 pr-6">
                 <span className={`text-xs font-medium px-2 py-0.5 rounded border ${PriorityColors[task.priority]}`}>
                   {task.priority}
@@ -98,7 +124,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 )}
               </div>
 
-              <h4 className="text-sm font-semibold text-slate-100 mb-1 leading-snug group-hover:text-primary transition-colors">
+              <h4 className={`text-sm font-semibold text-slate-100 mb-1 leading-snug group-hover:text-primary transition-colors ${(task.isCompleted && showCheckboxes) ? 'line-through text-slate-400' : ''}`}>
                 {task.title}
               </h4>
 
@@ -121,7 +147,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   )}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       )}

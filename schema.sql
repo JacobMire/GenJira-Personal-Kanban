@@ -33,6 +33,7 @@ create table tasks (
   story_points integer,
   acceptance_criteria text[] default '{}',
   position integer not null default 0,
+  is_completed boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

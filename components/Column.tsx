@@ -16,6 +16,8 @@ interface ColumnProps {
     onDelete: (columnId: string) => void;
     onDeleteMultiple: (taskIds: string[]) => void;
     isCondensed?: boolean;
+    showCheckboxes?: boolean;
+    onToggleTaskCompletion: (taskId: string, isCompleted: boolean) => void;
 }
 
 const Column: React.FC<ColumnProps> = ({
@@ -29,7 +31,9 @@ const Column: React.FC<ColumnProps> = ({
     onRename,
     onDelete,
     onDeleteMultiple,
-    isCondensed = false
+    isCondensed = false,
+    showCheckboxes = false,
+    onToggleTaskCompletion
 }) => {
     const [width, setWidth] = useState(column.width || 320);
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -330,6 +334,8 @@ const Column: React.FC<ColumnProps> = ({
                                             isSelected={selectedTaskIds.has(task.id)}
                                             onToggleSelection={handleToggleSelection}
                                             isCondensed={isCondensed}
+                                            showCheckboxes={showCheckboxes}
+                                            onToggleTaskCompletion={onToggleTaskCompletion}
                                         />
                                     ))}
                                     {provided.placeholder}

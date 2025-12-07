@@ -14,6 +14,7 @@ export interface Task {
   assignee?: string;
   storyPoints?: number;
   acceptanceCriteria?: string[];
+  isCompleted?: boolean;
   createdAt: number;
 }
 
@@ -30,6 +31,7 @@ export interface BoardData {
   columnOrder: string[];
   settings?: {
     isCondensed?: boolean;
+    showCheckboxes?: boolean;
   };
 }
 

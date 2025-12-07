@@ -4,10 +4,12 @@ import { updateBoardSettings } from '../services/boardService';
 
 export interface BoardSettings {
   isCondensed: boolean;
+  showCheckboxes: boolean;
 }
 
 const DEFAULT_SETTINGS: BoardSettings = {
   isCondensed: false,
+  showCheckboxes: false,
 };
 
 const STORAGE_KEY = 'genjira_board_settings';
