@@ -4,9 +4,10 @@ import Column from './components/Column';
 import Modal from './components/Modal';
 import BulkImportModal from './components/BulkImportModal';
 import ConfirmModal from './components/ConfirmModal';
+import SettingsModal from './components/SettingsModal';
 import { Auth } from './components/Auth';
 import { BoardData, Task, Priority, Column as ColumnType } from './types';
-import { Plus, Search, Kanban, X, Settings2, Check, LogOut, Loader2, Bell } from 'lucide-react';
+import { Plus, Search, Kanban, X, Settings2, Check, LogOut, Loader2, Bell, Settings } from 'lucide-react';
 import { supabase } from './services/supabase';
 import { Session } from '@supabase/supabase-js';
 import * as boardService from './services/boardService';
@@ -29,6 +30,15 @@ const App: React.FC = () => {
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [isLayoutMode, setIsLayoutMode] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCondensed, setIsCondensed] = useState(() => {
+    const saved = localStorage.getItem('genjira_condensed_view');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('genjira_condensed_view', JSON.stringify(isCondensed));
+  }, [isCondensed]);
 
   // Confirm Modal State
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -526,6 +536,16 @@ const App: React.FC = () => {
             {isLayoutMode ? 'Done' : 'Layout'}
           </button>
 
+          {isLayoutMode && (
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              title="Board Settings"
+            >
+              <Settings size={18} />
+            </button>
+          )}
+
           <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
 
           <div className="flex items-center gap-3">
@@ -565,6 +585,7 @@ const App: React.FC = () => {
                   onRename={handleRenameColumn}
                   onDelete={handleDeleteColumn}
                   onDeleteMultiple={handleDeleteMultipleTasks}
+                  isCondensed={isCondensed}
                 />
               );
             })}
@@ -632,6 +653,13 @@ const App: React.FC = () => {
         message={confirmConfig.message}
         onConfirm={confirmConfig.onConfirm}
         onCancel={closeConfirm}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        isCondensed={isCondensed}
+        onToggleCondensed={setIsCondensed}
       />
     </div>
   );
