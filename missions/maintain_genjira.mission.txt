@@ -1,0 +1,10 @@
+MISSION: ONGOING MAINTENANCE
+
+Load:
+- system_prompt.md
+- architecture_overview.md
+- knowledge_base.md
+
+Task:
+Maintain GenJira codebase with correct patterns and constraints.
+All edits must use XML diff blocks.

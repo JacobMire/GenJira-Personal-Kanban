@@ -155,16 +155,20 @@ export const createColumn = async (boardId: string, column: Column, position: nu
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;
 
-    const { data: boards } = await supabase.from('boards').select('id').eq('user_id', data.user.id).single();
+    const { data: boards } = await supabase.from('boards').select('id').eq('user_id', data.user.id).limit(1).maybeSingle();
     if (!boards) return;
 
-    await supabase.from('columns').insert({
+    const { error } = await supabase.from('columns').insert({
         id: column.id,
         board_id: boards.id,
         title: column.title,
         width: column.width,
         position: position
     });
+
+    if (error) {
+        console.error('Create Column Error:', error);
+    }
 };
 
 export const updateColumn = async (columnId: string, updates: Partial<Column>) => {
@@ -173,18 +177,21 @@ export const updateColumn = async (columnId: string, updates: Partial<Column>) =
    if (updates.width) dbUpdates.width = updates.width;
    if (updates.title) dbUpdates.title = updates.title;
 
-   await supabase.from('columns').update(dbUpdates).eq('id', columnId);
+   const { error } = await supabase.from('columns').update(dbUpdates).eq('id', columnId);
+   if (error) console.error('Update Column Error:', error);
 };
 
 export const deleteColumn = async (columnId: string) => {
-    await supabase.from('columns').delete().eq('id', columnId);
+    const { error } = await supabase.from('columns').delete().eq('id', columnId);
+    if (error) console.error('Delete Column Error:', error);
 };
 
 export const moveTask = async (taskId: string, newColumnId: string, newPosition: number) => {
-    await supabase.from('tasks').update({
+    const { error } = await supabase.from('tasks').update({
         column_id: newColumnId,
         position: newPosition
     }).eq('id', taskId);
+    if (error) console.error('Move Task Error:', error);
 };
 
 export const updateColumnOrder = async (columnId: string, newPosition: number) => {

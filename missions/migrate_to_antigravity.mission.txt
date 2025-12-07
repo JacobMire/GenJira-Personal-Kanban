@@ -1,0 +1,17 @@
+MISSION: MIGRATE GENJIRA INTO ANTIGRAVITY
+
+GOAL:
+Reconstruct the GenJira development environment, retaining 100% of AI Studio behavior.
+
+INSTRUCTIONS:
+1. Load ALL docs in /docs.
+2. Summarize architecture in your own words.
+3. Inspect src/services for Gemini/Supabase wiring.
+4. Validate React 19 patterns across components.
+5. Confirm correct use of @hello-pangea/dnd.
+6. Rebuild missing or outdated service files.
+7. DO NOT modify code without XML diffs.
+8. Ask before executing shell commands.
+
+OUTPUT:
+A migration report + list of required next steps.
