@@ -13,6 +13,7 @@ import { Session } from '@supabase/supabase-js';
 import * as boardService from './services/boardService';
 import { generateTasksFromText, BulkTaskResponse } from './services/geminiService';
 import { generateUUID } from './utils';
+import { useBoardSettings } from './hooks/useBoardSettings';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -31,14 +32,7 @@ const App: React.FC = () => {
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [isLayoutMode, setIsLayoutMode] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isCondensed, setIsCondensed] = useState(() => {
-    const saved = localStorage.getItem('genjira_condensed_view');
-    return saved ? JSON.parse(saved) : false;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('genjira_condensed_view', JSON.stringify(isCondensed));
-  }, [isCondensed]);
+  const { settings, updateSetting } = useBoardSettings();
 
   // Confirm Modal State
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -585,7 +579,7 @@ const App: React.FC = () => {
                   onRename={handleRenameColumn}
                   onDelete={handleDeleteColumn}
                   onDeleteMultiple={handleDeleteMultipleTasks}
-                  isCondensed={isCondensed}
+                  isCondensed={settings.isCondensed}
                 />
               );
             })}
@@ -658,8 +652,8 @@ const App: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        isCondensed={isCondensed}
-        onToggleCondensed={setIsCondensed}
+        isCondensed={settings.isCondensed}
+        onToggleCondensed={(val) => updateSetting('isCondensed', val)}
       />
     </div>
   );

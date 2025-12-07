@@ -8,7 +8,10 @@ create table boards (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
 
   -- Safety Constraint: Enforce one board per user
-  CONSTRAINT unique_user_board UNIQUE (user_id)
+  CONSTRAINT unique_user_board UNIQUE (user_id),
+  
+  -- Settings: Store user preferences (JSON)
+  settings jsonb default '{}'::jsonb
 );
 
 create table columns (

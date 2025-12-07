@@ -28,6 +28,9 @@ export interface BoardData {
   tasks: Record<string, Task>;
   columns: Record<string, Column>;
   columnOrder: string[];
+  settings?: {
+    isCondensed?: boolean;
+  };
 }
 
 export interface AIResponse {

@@ -6,6 +6,7 @@ interface DBBoard {
   id: string;
   user_id: string;
   title: string;
+  settings: any;
 }
 
 interface DBColumn {
@@ -110,7 +111,12 @@ export const fetchBoardData = async (userId: string): Promise<BoardData | null> 
     }
   });
 
-  return { tasks, columns, columnOrder };
+  return { tasks, columns, columnOrder, settings: boards?.[0]?.settings || {} };
+};
+
+export const updateBoardSettings = async (boardId: string, settings: any) => {
+    const { error } = await supabase.from('boards').update({ settings }).eq('id', boardId);
+    if (error) console.error('Update Settings Error:', error);
 };
 
 export const createTask = async (columnId: string, task: Task, position: number) => {
