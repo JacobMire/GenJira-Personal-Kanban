@@ -508,18 +508,18 @@ const App: React.FC = () => {
     <div className="h-screen w-full flex flex-col bg-background text-slate-100 overflow-hidden font-sans selection:bg-primary/30">
 
       {/* Top Navigation */}
-      <nav className="h-16 border-b border-white/5 bg-surface/50 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-10">
-        <div className="flex items-center gap-4">
+      <nav className="h-16 border-b border-white/5 bg-surface/50 backdrop-blur-md flex items-center justify-between px-3 sm:px-6 shrink-0 z-10 gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <div className="bg-primary/20 p-2 rounded-lg">
             <Kanban className="text-primary" size={24} />
           </div>
-          <div>
+          <div className="hidden xs:block">
             <h1 className="font-bold text-lg tracking-tight">GenJira</h1>
-            <p className="text-xs text-slate-500">Cloud Workspace</p>
+            <p className="text-xs text-slate-500 hidden sm:block">Cloud Workspace</p>
           </div>
         </div>
 
-        <div className="flex-1 max-w-md mx-8">
+        <div className="flex-1 max-w-md mx-2 sm:mx-8 min-w-0">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors" size={18} />
             <input
@@ -546,16 +546,16 @@ const App: React.FC = () => {
             `}
           >
             {isLayoutMode ? <Check size={14} /> : <Settings2 size={14} />}
-            {isLayoutMode ? 'Done' : 'Layout'}
+            <span className="hidden sm:inline">{isLayoutMode ? 'Done' : 'Layout'}</span>
           </button>
 
           <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
 
           {/* User Menu */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center gap-2 p-1.5 pr-3 hover:bg-slate-800 rounded-lg transition-colors group"
+              className="flex items-center gap-2 p-1 hover:bg-slate-800 rounded-lg transition-colors group"
             >
               <div className="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-xs">
                 {session.user.email?.[0].toUpperCase()}
@@ -672,7 +672,7 @@ const App: React.FC = () => {
             )}
           </div>
         </DragDropContext>
-      </main>
+      </main >
 
       <Modal
         task={selectedTask}
@@ -706,7 +706,7 @@ const App: React.FC = () => {
         showCheckboxes={settings.showCheckboxes}
         onToggleCheckboxes={(val) => updateSetting('showCheckboxes', val)}
       />
-    </div>
+    </div >
   );
 };
 
