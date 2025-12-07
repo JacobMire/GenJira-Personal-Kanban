@@ -7,7 +7,7 @@ import ConfirmModal from './components/ConfirmModal';
 import SettingsModal from './components/SettingsModal';
 import { Auth } from './components/Auth';
 import { BoardData, Task, Priority, Column as ColumnType } from './types';
-import { Plus, Search, Kanban, X, Settings2, Check, LogOut, Loader2, Bell, Settings } from 'lucide-react';
+import { Plus, Search, Kanban, X, Settings2, Check, LogOut, Loader2, Bell, Settings, ChevronDown, User } from 'lucide-react';
 import { supabase } from './services/supabase';
 import { Session } from '@supabase/supabase-js';
 import * as boardService from './services/boardService';
@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [isLayoutMode, setIsLayoutMode] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { settings, updateSetting } = useBoardSettings();
 
   // Confirm Modal State
@@ -548,27 +549,55 @@ const App: React.FC = () => {
             {isLayoutMode ? 'Done' : 'Layout'}
           </button>
 
-          {isLayoutMode && (
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-              title="Board Settings"
-            >
-              <Settings size={18} />
-            </button>
-          )}
-
           <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400 hidden sm:block">{session.user.email}</span>
+          {/* User Menu */}
+          <div className="relative">
             <button
-              onClick={handleSignOut}
-              className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors text-slate-400"
-              title="Sign Out"
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center gap-2 p-1.5 pr-3 hover:bg-slate-800 rounded-lg transition-colors group"
             >
-              <LogOut size={18} />
+              <div className="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-xs">
+                {session.user.email?.[0].toUpperCase()}
+              </div>
+              <div className="hidden sm:block text-left">
+                <p className="text-xs font-medium text-slate-200 group-hover:text-white transition-colors">
+                  {session.user.email}
+                </p>
+              </div>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
             </button>
+
+            {isUserMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setIsUserMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="p-1">
+                    <button
+                      onClick={() => {
+                        setIsSettingsOpen(true);
+                        setIsUserMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                    >
+                      <Settings size={16} />
+                      Preferences
+                    </button>
+                    <div className="h-[1px] bg-slate-800 my-1"></div>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                    >
+                      <LogOut size={16} />
+                      Log Out
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </nav>
