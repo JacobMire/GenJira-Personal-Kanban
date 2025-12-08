@@ -79,10 +79,12 @@ const App: React.FC = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      if (session) loadBoard(session.user.id);
-      else {
+      // Only load board on initial sign in or explicit user updates, not on token refresh
+      if (session && (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION')) {
+        loadBoard(session.user.id);
+      } else if (!session) {
         setData({ tasks: {}, columns: {}, columnOrder: [] });
         setLoading(false);
       }
