@@ -2,6 +2,7 @@ import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Task, Priority } from '../types';
 import { AlertCircle, Check } from 'lucide-react';
+import { Tooltip } from './Tooltip';
 
 interface TaskCardProps {
   task: Task;
@@ -101,9 +102,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
           {isCondensed ? (
             // Condensed View Content
             <div className={`flex items-center justify-between flex-1 min-w-0 ${(task.isCompleted && showCheckboxes) ? 'opacity-50' : ''}`} onClick={() => onClick(task)}>
-              <h4 className={`text-sm font-medium text-slate-100 truncate pr-2 ${(task.isCompleted && showCheckboxes) ? 'line-through text-slate-400' : ''}`}>
-                {task.title}
-              </h4>
+              <Tooltip content={task.title} checkOverflow>
+                <h4
+                  className={`text-sm font-medium text-slate-100 truncate pr-2 ${(task.isCompleted && showCheckboxes) ? 'line-through text-slate-400' : ''}`}
+                >
+                  {task.title}
+                </h4>
+              </Tooltip>
               {task.storyPoints && (
                 <span className="text-[10px] font-mono bg-black/20 text-white/70 px-1.5 py-0.5 rounded-full shrink-0">
                   {task.storyPoints}
