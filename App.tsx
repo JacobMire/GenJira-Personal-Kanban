@@ -18,6 +18,7 @@ import { useBoardSettings } from './hooks/useBoardSettings';
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoadedData = React.useRef(false);
 
   const [data, setData] = useState<BoardData>({ tasks: {}, columns: {}, columnOrder: [] });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -81,12 +82,20 @@ const App: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      // Only load board on initial sign in or explicit user updates, not on token refresh
-      if (session && (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION')) {
-        loadBoard(session.user.id);
-      } else if (!session) {
+
+      if (session) {
+        // Show loader only for explicit sign-ins or initial session AND if data hasn't been loaded yet
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && !hasLoadedData.current) {
+          setLoading(true);
+        }
+        // Always load board data (silent update for other events like USER_UPDATED)
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+          loadBoard(session.user.id);
+        }
+      } else {
         setData({ tasks: {}, columns: {}, columnOrder: [] });
         setLoading(false);
+        hasLoadedData.current = false;
       }
     });
 
@@ -94,10 +103,14 @@ const App: React.FC = () => {
   }, []);
 
   const loadBoard = async (userId: string) => {
-    setLoading(true);
+    // Note: We don't set loading(true) here to allow for silent background updates.
+    // The caller should set loading(true) if a full-screen loader is desired.
     try {
       const boardData = await boardService.fetchBoardData(userId);
-      if (boardData) setData(boardData);
+      if (boardData) {
+        setData(boardData);
+        hasLoadedData.current = true;
+      }
     } catch (e) {
       console.error('Failed to load board', e);
     } finally {
